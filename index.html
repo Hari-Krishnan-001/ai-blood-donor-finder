@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AI BloodMatch Pro | Smart Donor Finder</title>
+    <!-- Google Fonts + Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at 10% 20%, rgba(255,245,245,1) 0%, rgba(255,235,235,1) 100%); min-height: 100vh; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #ffd9d9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #c81e1e; border-radius: 10px; }
+        .navbar {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+            padding: 0.9rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            border-bottom: 1px solid rgba(200, 30, 30, 0.2);
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { background: linear-gradient(145deg, #c81e1e, #a11515); width: 44px; height: 44px; border-radius: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 18px rgba(200,30,30,0.3); }
+        .logo-icon i { font-size: 26px; color: white; }
+        .logo-text { font-weight: 800; font-size: 1.5rem; background: linear-gradient(135deg, #b91c1c, #e65c5c); background-clip: text; -webkit-background-clip: text; color: transparent; }
+        .nav-links { display: flex; gap: 32px; align-items: center; }
+        .nav-item { font-weight: 600; cursor: pointer; color: #2d2f3b; transition: 0.2s; padding: 6px 0; border-bottom: 2px solid transparent; }
+        .nav-item i { margin-right: 8px; }
+        .nav-item:hover, .nav-item.active { color: #c81e1e; border-bottom-color: #c81e1e; }
+        .logout-nav { background: rgba(200,30,30,0.1); border: none; padding: 8px 22px; border-radius: 40px; font-weight: 600; color: #c81e1e; cursor: pointer; transition: 0.2s; }
+        .logout-nav:hover { background: #c81e1e; color: white; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem 1.8rem; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-radius: 38px; box-shadow: 0 20px 40px -14px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.6); padding: 2rem; transition: transform 0.25s ease, box-shadow 0.3s; }
+        .glass-card:hover { transform: translateY(-3px); box-shadow: 0 28px 48px -16px rgba(200,30,30,0.2); }
+        .form-group { margin-bottom: 1.5rem; }
+        label { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #b91c1c; display: block; margin-bottom: 6px; }
+        input, select, textarea { width: 100%; padding: 14px 18px; border: 1.5px solid #f0d4d4; border-radius: 32px; font-size: 1rem; background: white; transition: 0.2s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #c81e1e; box-shadow: 0 0 0 3px rgba(200,30,30,0.1); }
+        .btn-primary { background: linear-gradient(100deg, #c81e1e, #a11515); border: none; color: white; font-weight: 700; padding: 14px 24px; border-radius: 44px; width: 100%; font-size: 1rem; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 18px rgba(200,30,30,0.3); }
+        .btn-primary:hover { transform: scale(0.98); background: linear-gradient(100deg, #b01818, #8e1212); }
+        .btn-outline { background: white; border: 2px solid #c81e1e; color: #c81e1e; font-weight: 600; padding: 10px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s; }
+        .btn-outline:hover { background: #c81e1e; color: white; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .dash-card { background: white; border-radius: 32px; padding: 2rem 1rem; text-align: center; cursor: pointer; transition: all 0.25s; border: 1px solid #ffe0e0; box-shadow: 0 10px 22px rgba(0,0,0,0.04); }
+        .dash-card i { font-size: 52px; color: #c81e1e; margin-bottom: 16px; }
+        .dash-card h3 { font-weight: 800; margin-bottom: 8px; }
+        .dash-card:hover { transform: translateY(-8px); border-color: #ffa5a5; box-shadow: 0 24px 32px -12px rgba(200,30,30,0.2); }
+        .donor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 1.8rem; margin-top: 1.8rem; }
+        .donor-card { background: white; border-radius: 30px; padding: 1.4rem; transition: all 0.3s ease; border: 1px solid #ffe0e0; }
+        .donor-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); border-color: #c81e1e; }
+        .emergency-badge { background: #ff4d4d; color: white; font-size: 0.7rem; font-weight: bold; padding: 5px 14px; border-radius: 50px; display: inline-block; margin-bottom: 12px; animation: pulseRed 1.2s infinite; }
+        @keyframes pulseRed { 0% { background-color: #ff4d4d; box-shadow: 0 0 0 0 rgba(255,77,77,0.5);} 70% { background-color: #cc0000; box-shadow: 0 0 0 6px rgba(255,77,77,0);} 100% { background-color: #ff4d4d; box-shadow: 0 0 0 0 rgba(255,77,77,0);} }
+        .avail-high { background: #e0f5e0; color: #1f7a1f; padding: 4px 14px; border-radius: 30px; font-weight: 600; display: inline-block; }
+        .avail-medium { background: #fff0e0; color: #e68a2e; padding: 4px 14px; border-radius: 30px; display: inline-block; }
+        .avail-low { background: #ffe0e0; color: #c81e1e; padding: 4px 14px; border-radius: 30px; display: inline-block; }
+        .reported-badge { background: #ff9800; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-block; margin-left: 8px; }
+        .contact-btn, .report-btn { background: #f0f2f5; width: calc(50% - 5px); padding: 10px; border-radius: 40px; font-weight: 600; color: #c81e1e; margin-top: 14px; border: none; cursor: pointer; transition: 0.2s; }
+        .report-btn { background: #fff0f0; color: #ff9800; }
+        .contact-btn:hover { background: #c81e1e; color: white; }
+        .report-btn:hover { background: #ff9800; color: white; }
+        .button-group { display: flex; gap: 10px; margin-top: 14px; }
+        .loading { display: flex; justify-content: center; padding: 2rem; gap: 14px; align-items: center; }
+        .spinner { width: 42px; height: 42px; border: 4px solid #ffc5c5; border-top: 4px solid #c81e1e; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .map-container { margin: 1rem 0; border-radius: 28px; overflow: hidden; border: 2px solid #ffe0e0; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        #donorMap, #requestMap { height: 350px; width: 100%; background: #f0f0f0; }
+        .location-info { background: #f8f0f0; padding: 12px 15px; border-radius: 28px; margin-top: 10px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .location-search { display: flex; gap: 10px; margin-bottom: 15px; }
+        .location-search input { flex: 1; padding: 12px 18px; }
+        .location-search button { padding: 12px 20px; width: auto; }
+        .selected-coord { font-family: monospace; background: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+        .profile-header { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #ffe0e0; }
+        .profile-avatar { background: linear-gradient(145deg, #c81e1e, #a11515); width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(200,30,30,0.3); }
+        .profile-avatar i { font-size: 50px; color: white; }
+        .profile-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+        .stat-card { background: #f8f0f0; border-radius: 24px; padding: 1rem; text-align: center; }
+        .stat-card i { font-size: 28px; color: #c81e1e; margin-bottom: 8px; }
+        .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: #c81e1e; }
+        .stat-card .stat-label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
+        .info-row { display: flex; padding: 12px 0; border-bottom: 1px solid #ffe0e0; }
+        .info-label { width: 140px; font-weight: 700; color: #b91c1c; }
+        .info-value { flex: 1; color: #2d2f3b; }
+        .page { display: none; animation: fadeIn 0.35s ease; }
+        .active-page { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 700px) {
+            .navbar { flex-direction: column; gap: 12px; }
+            .container { padding: 1.2rem; }
+            .map-container { margin: 0.8rem 0; }
+            #donorMap, #requestMap { height: 280px; }
+            .button-group { flex-direction: column; }
+            .contact-btn, .report-btn { width: 100%; }
+            .profile-header { flex-direction: column; text-align: center; }
+            .info-row { flex-direction: column; gap: 8px; }
+            .info-label { width: 100%; }
+        }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; border-radius: 32px; padding: 2rem; max-width: 450px; width: 90%; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-content h3 { margin-bottom: 1rem; color: #c81e1e; }
+        .modal-content select, .modal-content textarea { width: 100%; margin-bottom: 1rem; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .error-msg { color: #c81e1e; font-size: 0.7rem; margin-top: 4px; }
+        footer { text-align: center; padding: 1.5rem; color: #b98b8b; font-size: 0.8rem; }
+        .file-preview { font-size: 0.8rem; margin-top: 6px; color: #2d6a4f; }
+        .current-location-btn { background: white; border: 1px solid #c81e1e; color: #c81e1e; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 0.8rem; margin-left: auto; transition: 0.2s; }
+        .current-location-btn:hover { background: #c81e1e; color: white; }
+        .leaflet-control-attribution { font-size: 9px; }
+        .edit-toggle-btn { background: #c81e1e20; border: 1px solid #c81e1e; color: #c81e1e; padding: 8px 20px; border-radius: 40px; cursor: pointer; }
+        .edit-toggle-btn:hover { background: #c81e1e; color: white; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar" id="navbar" style="display: none;">
+    <div class="logo">
+        <div class="logo-icon"><i class="fas fa-tint"></i></div>
+        <div class="logo-text">AI BloodMatch Pro</div>
+    </div>
+    <div class="nav-links" id="navLinks">
+        <div class="nav-item" data-nav="dashboard"><i class="fas fa-home"></i> Home</div>
+        <div class="nav-item" data-nav="profilePage"><i class="fas fa-user-circle"></i> Profile</div>
+        <div class="nav-item" data-nav="searchNav"><i class="fas fa-search"></i> Search</div>
+        <button class="logout-nav" id="logoutGlobal"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+</nav>
+
+<div class="container" id="appRoot">
+    <div id="authPage" class="page active-page">
+        <div class="glass-card" style="max-width: 520px; margin: 0 auto;">
+            <div style="text-align:center;"><i class="fas fa-heartbeat" style="font-size: 58px; color:#c81e1e;"></i><h2>AI BloodMatch Pro</h2><p>60+ Donors | Smart AI Matching</p></div>
+            <div style="display: flex; gap: 16px; justify-content: center; margin: 1.5rem 0 1rem;">
+                <button id="showLoginTab" class="btn-outline" style="width: auto; padding: 8px 28px;">Sign In</button>
+                <button id="showSignupTab" class="btn-outline" style="width: auto; padding: 8px 28px;">Sign Up</button>
+            </div>
+            <div id="loginFormContainer">
+                <form id="loginFormMain">
+                    <div class="form-group"><label><i class="fas fa-phone-alt"></i> Phone Number</label><input type="tel" id="loginPhone" placeholder="8956230147"></div>
+                    <div class="form-group"><label><i class="fas fa-lock"></i> Password</label><input type="password" id="loginPassword" placeholder="****"></div>
+                    <button type="submit" class="btn-primary">Login</button>
+                    <div id="loginErrorMsg" class="error-msg" style="text-align:center; margin-top:12px;"></div>
+                </form>
+            </div>
+            <div id="signupFormContainer" style="display: none;">
+                <form id="signupFormMain">
+                    <div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="John Doe"></div>
+                    <div class="form-group"><label>Phone Number</label><input type="tel" id="signupPhone" placeholder="+91 9876543210"></div>
+                    <div class="form-group"><label>Blood Group</label><select id="signupBlood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                    <div class="form-group"><label>Location</label><input type="text" id="signupLocation" placeholder="e.g., Kollam, Kerala"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="signupPassword" placeholder="••••••"></div>
+                    <button type="submit" class="btn-primary">Create Account</button>
+                    <div id="signupErrorMsg" class="error-msg" style="text-align:center; margin-top:12px;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardPage" class="page">
+        <div class="glass-card">
+            <h2><i class="fas fa-chart-line"></i> AI Smart Dashboard</h2>
+            <p>Welcome back, <strong id="dashboardUserName">Donor</strong> — <span id="donorCountDisplay">Loading...</span> donors available in Kerala.</p>
+            <div class="dashboard-grid">
+                <div class="dash-card" data-dash="donorForm"><i class="fas fa-tint"></i><h3>🩸 Blood Donor</h3><p>Register as donor</p></div>
+                <div class="dash-card" data-dash="requestForm"><i class="fas fa-ambulance"></i><h3>🆘 Blood Request</h3><p>Request blood now</p></div>
+                <div class="dash-card" data-dash="feedbackPage"><i class="fas fa-comment-dots"></i><h3>💬 Feedback</h3><p>Share experience</p></div>
+                <div class="dash-card" data-dash="helpPage"><i class="fas fa-headset"></i><h3>📞 Help</h3><p>24/7 Support</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profilePage" class="page">
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+                <h2><i class="fas fa-user-circle"></i> My Profile</h2>
+                <button id="editProfileToggle" class="edit-toggle-btn"><i class="fas fa-edit"></i> Edit Profile</button>
+            </div>
+            <div id="profileViewMode">
+                <div class="profile-header">
+                    <div class="profile-avatar"><i class="fas fa-user-md"></i></div>
+                    <div><h3 id="profileDisplayName">--</h3><p><i class="fas fa-tint"></i> Blood: <strong id="profileDisplayBlood">--</strong></p><p><i class="fas fa-map-marker-alt"></i> Location: <span id="profileDisplayLocation">--</span></p><p><i class="fas fa-phone"></i> Phone: <span id="profileDisplayPhone">--</span></p></div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat-card"><i class="fas fa-chart-line"></i><div class="stat-value" id="availabilityScore">--</div><div class="stat-label">AI Score</div></div>
+                    <div class="stat-card"><i class="fas fa-flag"></i><div class="stat-value" id="reportsCount">0</div><div class="stat-label">Reports</div></div>
+                    <div class="stat-card"><i class="fas fa-star"></i><div class="stat-value" id="trustScore">High</div><div class="stat-label">Trust</div></div>
+                </div>
+            </div>
+            <div id="profileEditMode" style="display: none;">
+                <form id="editProfileForm">
+                    <div class="form-group"><label>Full Name</label><input type="text" id="editName" required></div>
+                    <div class="form-group"><label>Blood Group</label><select id="editBlood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                    <div class="form-group"><label>Location</label><input type="text" id="editLocation" required></div>
+                    <div class="form-group"><label>Phone</label><input type="tel" id="editPhone" required></div>
+                    <div class="button-group"><button type="submit" class="btn-primary">Save</button><button type="button" id="cancelEditBtn" class="btn-outline">Cancel</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="donorFormPage" class="page">
+        <div class="glass-card" style="max-width: 900px; margin:0 auto;">
+            <h2><i class="fas fa-user-plus"></i> Register as Blood Donor</h2>
+            <form id="donorRegisterForm">
+                <div class="form-group"><label>Full Name</label><input type="text" id="donorName" required></div>
+                <div class="form-group"><label>Phone Number</label><input type="tel" id="donorPhone" required></div>
+                <div class="form-group"><label>Blood Group</label><select id="donorBloodGroup"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                <div class="form-group">
+                    <label>Select Your Location</label>
+                    <div class="location-search">
+                        <input type="text" id="donorLocationSearchInput" placeholder="Search location (e.g., Kollam, Trivandrum)">
+                        <button type="button" id="donorSearchLocationBtn" class="btn-outline" style="width: auto;"><i class="fas fa-search"></i> Search</button>
+                    </div>
+                    <div class="map-container"><div id="donorMap"></div></div>
+                    <div class="location-info">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="donorAddressDisplay">Click on map or search above</span>
+                        <button type="button" class="current-location-btn" id="donorCurrentLocation"><i class="fas fa-crosshairs"></i> My Location</button>
+                    </div>
+                    <input type="hidden" id="donorLat" value=""><input type="hidden" id="donorLng" value="">
+                    <div class="location-info"><span id="donorCoordDisplay" class="selected-coord">Not selected</span></div>
+                </div>
+                <div class="form-group"><label>Upload Blood Test Report</label><input type="file" id="bloodReport"><div id="filePreview" class="file-preview"></div></div>
+                <button type="submit" class="btn-primary">Submit Donor Profile</button>
+            </form>
+            <button class="btn-outline" id="backDashboardFromDonor">← Back to Dashboard</button>
+        </div>
+    </div>
+
+    <div id="requestFormPage" class="page">
+        <div class="glass-card" style="max-width: 900px; margin:0 auto;">
+            <h2><i class="fas fa-hand-holding-medical"></i> Emergency Blood Request</h2>
+            <form id="bloodRequestForm">
+                <div class="form-group"><label>Your Name</label><input type="text" id="reqName" required></div>
+                <div class="form-group"><label>Phone Number</label><input type="tel" id="reqPhone" required></div>
+                <div class="form-group"><label>Required Blood Group</label><select id="reqBloodGroup"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                <div class="form-group">
+                    <label>Emergency Location</label>
+                    <div class="location-search">
+                        <input type="text" id="locationSearchInput" placeholder="Search location (e.g., Kollam, Trivandrum)">
+                        <button type="button" id="searchLocationBtn" class="btn-outline" style="width: auto;"><i class="fas fa-search"></i> Search</button>
+                    </div>
+                    <div class="map-container"><div id="requestMap"></div></div>
+                    <div class="location-info">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="requestAddressDisplay">Click on map or search above</span>
+                        <button type="button" class="current-location-btn" id="requestCurrentLocation"><i class="fas fa-crosshairs"></i> My Location</button>
+                    </div>
+                    <input type="hidden" id="reqLat" value=""><input type="hidden" id="reqLng" value="">
+                    <div class="location-info"><span id="requestCoordDisplay" class="selected-coord">Not selected</span></div>
+                </div>
+                <div class="form-group"><label>Urgency Level</label><select id="urgencyLevelReq"><option value="Normal">Normal</option><option value="Emergency">🚨 Emergency</option></select></div>
+                <button type="submit" class="btn-primary">Find Smart Donors (AI)</button>
+            </form>
+            <div id="searchResultsArea" style="margin-top: 2rem;"></div>
+            <button class="btn-outline" id="backDashboardFromRequest">← Back to Dashboard</button>
+        </div>
+    </div>
+
+    <div id="feedbackPage" class="page">
+        <div class="glass-card"><h2><i class="fas fa-star"></i> Your Feedback</h2><textarea id="feedbackText" rows="4" placeholder="Share your experience..."></textarea><button class="btn-primary" id="submitFeedbackBtn">Submit Feedback</button><div id="pastFeedback" style="margin-top:1rem;"><h4>Recent Feedback</h4><ul id="feedbackList"></ul></div><button class="btn-outline" id="backDashboardFeedback">← Back</button></div>
+    </div>
+    <div id="helpPage" class="page">
+        <div class="glass-card" style="text-align:center;"><i class="fas fa-phone-alt" style="font-size:48px; color:#c81e1e;"></i><h2>Help & Support</h2><p><i class="fas fa-phone"></i> <strong>+91-1800-202-4357</strong> (24/7 Helpline)</p><p><i class="fas fa-envelope"></i> <strong>support@aibloodmatch.com</strong></p><p><i class="fas fa-map-marked-alt"></i> Search any location or click on map for accurate donor matching</p><button class="btn-outline" id="backDashboardHelp">← Back</button></div>
+    </div>
+</div>
+
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <h3><i class="fas fa-flag"></i> Report Donor</h3>
+        <select id="reportReason">
+            <option value="Fake donor">🚫 Fake donor</option>
+            <option value="Wrong phone number">📞 Wrong phone number</option>
+            <option value="Not responding">⏰ Not responding</option>
+            <option value="Other">📝 Other</option>
+        </select>
+        <textarea id="reportOtherText" rows="3" placeholder="Additional details"></textarea>
+        <div class="modal-buttons"><button class="btn-outline" id="cancelReportBtn">Cancel</button><button class="btn-primary" id="submitReportBtn">Submit Report</button></div>
+    </div>
+</div>
+
+<footer>❤️ 60+ Active Donors | AI Distance-Based Scoring | Trust & Safety System</footer>
+
+<script>
+    let usersDB = [], donorsDB = [], feedbacks = [];
+    let donorMap, requestMap, currentReportDonorId = null;
+
+    // ========== COMPLETE 60 DONORS DATABASE ==========
+    const ALL_DONORS = [
+        { id: 1, name: "Devajith", phone: "8078255230", blood: "B-", lat: 8.922484, lng: 76.559109, address: "Kavanad, Kerala", activeScore: "High", lastActive: "2 days ago", reports: [] },
+        { id: 2, name: "Anand", phone: "8086169915", blood: "A+", lat: 8.859666, lng: 76.664012, address: "Kottiyam, Kollam", activeScore: "Medium", lastActive: "5 days ago", reports: [] },
+        { id: 3, name: "Sinu", phone: "7736214775", blood: "B+", lat: 8.8932, lng: 76.6141, address: "Kollam", activeScore: "High", lastActive: "5 mins ago", reports: [] },
+        { id: 4, name: "Gokul", phone: "8129827147", blood: "O+", lat: 9.9312, lng: 76.2673, address: "Ernakulam", activeScore: "Low", lastActive: "2 days ago", reports: [] },
+        { id: 5, name: "Vaisakh", phone: "9633199929", blood: "B+", lat: 11.2588, lng: 75.7804, address: "Kozhikode", activeScore: "High", lastActive: "1 hour ago", reports: [] },
+        { id: 6, name: "Kannan S", phone: "9061114508", blood: "O+", lat: 8.5241, lng: 76.9366, address: "Thiruvananthapuram", activeScore: "Low", lastActive: "3 days ago", reports: [] },
+        { id: 7, name: "Vikas", phone: "9995864375", blood: "A+", lat: 10.8505, lng: 76.2711, address: "Thrissur", activeScore: "High", lastActive: "30 mins ago", reports: [] },
+        { id: 8, name: "Joseph", phone: "9633093629", blood: "A+", lat: 9.5916, lng: 76.5222, address: "Kottayam", activeScore: "Low", lastActive: "5 days ago", reports: [] },
+        { id: 9, name: "Asif", phone: "7736884379", blood: "B+", lat: 11.8745, lng: 75.3704, address: "Kannur", activeScore: "High", lastActive: "10 mins ago", reports: [] },
+        { id: 10, name: "Minshad", phone: "8129641358", blood: "AB-", lat: 10.7867, lng: 76.6548, address: "Palakkad", activeScore: "Low", lastActive: "1 week ago", reports: [] },
+        { id: 11, name: "Abhishek", phone: "9539850962", blood: "A+", lat: 9.4981, lng: 76.3388, address: "Alappuzha", activeScore: "High", lastActive: "15 mins ago", reports: [] },
+        { id: 12, name: "Aswin S", phone: "8129890204", blood: "O+", lat: 12.2958, lng: 76.6394, address: "Kasargod", activeScore: "Low", lastActive: "4 days ago", reports: [] },
+        { id: 13, name: "Md Gesudharaz", phone: "8464946413", blood: "A+", lat: 9.8500, lng: 76.4500, address: "Cherthala", activeScore: "High", lastActive: "20 mins ago", reports: [] },
+        { id: 14, name: "Mani", phone: "7401535415", blood: "O+", lat: 8.7642, lng: 76.6995, address: "Paravur", activeScore: "Low", lastActive: "2 days ago", reports: [] },
+        { id: 15, name: "Sriram", phone: "8056051072", blood: "B+", lat: 10.5276, lng: 76.2144, address: "Irinjalakuda", activeScore: "High", lastActive: "10 mins ago", reports: [] },
+        { id: 16, name: "Ramesh", phone: "9884727286", blood: "B+", lat: 11.6854, lng: 75.7353, address: "Thalassery", activeScore: "Low", lastActive: "3 days ago", reports: [] },
+        { id: 17, name: "Suresh", phone: "8148916988", blood: "B+", lat: 9.2648, lng: 76.7870, address: "Pathanamthitta", activeScore: "High", lastActive: "1 hour ago", reports: [] },
+        { id: 18, name: "Murali", phone: "7299399392", blood: "A+", lat: 10.8505, lng: 76.2711, address: "Thrissur", activeScore: "Low", lastActive: "6 days ago", reports: [] },
+        { id: 19, name: "Prabhu", phone: "9884641396", blood: "O+", lat: 9.1720, lng: 76.5000, address: "Karunagappally", activeScore: "High", lastActive: "25 mins ago", reports: [] },
+        { id: 20, name: "Vijay", phone: "9790954376", blood: "AB-", lat: 8.8932, lng: 76.6141, address: "Kollam", activeScore: "Low", lastActive: "1 week ago", reports: [] },
+        { id: 21, name: "Jai", phone: "9962361062", blood: "B-", lat: 9.9816, lng: 76.2999, address: "Aluva", activeScore: "High", lastActive: "5 mins ago", reports: [] },
+        { id: 22, name: "Raja", phone: "9789865312", blood: "A+", lat: 11.1200, lng: 76.1190, address: "Malappuram", activeScore: "Low", lastActive: "4 days ago", reports: [] },
+        { id: 23, name: "Manikandan", phone: "9566420317", blood: "A+", lat: 9.5940, lng: 76.5222, address: "Kottayam", activeScore: "High", lastActive: "15 mins ago", reports: [] },
+        { id: 24, name: "Senthilkumar", phone: "9962688252", blood: "B+", lat: 10.7867, lng: 76.6548, address: "Palakkad", activeScore: "Low", lastActive: "2 days ago", reports: [] },
+        { id: 25, name: "Praveen Kumar", phone: "9094314313", blood: "B+", lat: 11.2588, lng: 75.7804, address: "Kozhikode", activeScore: "High", lastActive: "40 mins ago", reports: [] },
+        { id: 26, name: "Mohanraj", phone: "9444464789", blood: "B+", lat: 9.9312, lng: 76.2673, address: "Ernakulam", activeScore: "Low", lastActive: "3 days ago", reports: [] },
+        { id: 27, name: "Manikandan", phone: "9791097653", blood: "O+", lat: 8.5241, lng: 76.9366, address: "Thiruvananthapuram", activeScore: "High", lastActive: "1 hour ago", reports: [] },
+        { id: 28, name: "C Prathap", phone: "9940521093", blood: "O+", lat: 9.4981, lng: 76.3388, address: "Alappuzha", activeScore: "Low", lastActive: "5 days ago", reports: [] },
+        { id: 29, name: "Isaianand", phone: "7845548466", blood: "O+", lat: 11.8745, lng: 75.3704, address: "Kannur", activeScore: "High", lastActive: "12 mins ago", reports: [] },
+        { id: 30, name: "S Thilak", phone: "8618107230", blood: "O+", lat: 10.5276, lng: 76.2144, address: "Irinjalakuda", activeScore: "Low", lastActive: "1 week ago", reports: [] },
+        { id: 31, name: "Arun", phone: "9876543001", blood: "A+", lat: 8.5241, lng: 76.9366, address: "Thiruvananthapuram", activeScore: "High", lastActive: "10 mins ago", reports: [] },
+        { id: 32, name: "Nikhil", phone: "9876543002", blood: "B+", lat: 8.8932, lng: 76.6141, address: "Kollam", activeScore: "Medium", lastActive: "1 day ago", reports: [] },
+        { id: 33, name: "Rahul", phone: "9876543003", blood: "O+", lat: 9.2648, lng: 76.7870, address: "Pathanamthitta", activeScore: "High", lastActive: "5 mins ago", reports: [] },
+        { id: 34, name: "Ajith", phone: "9876543004", blood: "AB+", lat: 9.4981, lng: 76.3388, address: "Alappuzha", activeScore: "Low", lastActive: "3 days ago", reports: [] },
+        { id: 35, name: "Sandeep", phone: "9876543005", blood: "O-", lat: 8.7550, lng: 76.6690, address: "Paravur", activeScore: "High", lastActive: "15 mins ago", reports: [] },
+        { id: 36, name: "Vineeth", phone: "9876543006", blood: "A+", lat: 9.9312, lng: 76.2673, address: "Ernakulam", activeScore: "Low", lastActive: "2 days ago", reports: [] },
+        { id: 37, name: "Akash", phone: "9876543007", blood: "B-", lat: 10.8505, lng: 76.2711, address: "Thrissur", activeScore: "High", lastActive: "20 mins ago", reports: [] },
+        { id: 38, name: "Jithin", phone: "9876543008", blood: "O+", lat: 11.2588, lng: 75.7804, address: "Kozhikode", activeScore: "Medium", lastActive: "1 day ago", reports: [] },
+        { id: 39, name: "Rohit", phone: "9876543009", blood: "A+", lat: 11.8745, lng: 75.3704, address: "Kannur", activeScore: "High", lastActive: "12 mins ago", reports: [] },
+        { id: 40, name: "Adarsh", phone: "9876543010", blood: "B+", lat: 10.7867, lng: 76.6548, address: "Palakkad", activeScore: "Low", lastActive: "4 days ago", reports: [] },
+        { id: 41, name: "Nithin", phone: "9876543011", blood: "O+", lat: 9.5916, lng: 76.5222, address: "Kottayam", activeScore: "High", lastActive: "30 mins ago", reports: [] },
+        { id: 42, name: "Vishnu", phone: "9876543012", blood: "A+", lat: 9.8500, lng: 76.4500, address: "Cherthala", activeScore: "Low", lastActive: "5 days ago", reports: [] },
+        { id: 43, name: "Anoop", phone: "9876543013", blood: "B+", lat: 9.1720, lng: 76.5000, address: "Karunagappally", activeScore: "High", lastActive: "8 mins ago", reports: [] },
+        { id: 44, name: "Faisal", phone: "9876543014", blood: "O-", lat: 8.8932, lng: 76.6141, address: "Kollam", activeScore: "Medium", lastActive: "1 day ago", reports: [] },
+        { id: 45, name: "Shameer", phone: "9876543015", blood: "AB+", lat: 9.2648, lng: 76.7870, address: "Pathanamthitta", activeScore: "Low", lastActive: "3 days ago", reports: [] },
+        { id: 46, name: "Haris", phone: "9876543016", blood: "A+", lat: 8.5241, lng: 76.9366, address: "Thiruvananthapuram", activeScore: "High", lastActive: "5 mins ago", reports: [] },
+        { id: 47, name: "Rafi", phone: "9876543017", blood: "B+", lat: 8.7550, lng: 76.6690, address: "Kollam", activeScore: "Low", lastActive: "2 days ago", reports: [] },
+        { id: 48, name: "Junaid", phone: "9876543018", blood: "O+", lat: 9.4981, lng: 76.3388, address: "Alappuzha", activeScore: "High", lastActive: "9 mins ago", reports: [] },
+        { id: 49, name: "Shihab", phone: "9876543019", blood: "A+", lat: 9.9312, lng: 76.2673, address: "Ernakulam", activeScore: "Medium", lastActive: "1 day ago", reports: [] },
+        { id: 50, name: "Noufal", phone: "9876543020", blood: "B-", lat: 10.8505, lng: 76.2711, address: "Thrissur", activeScore: "High", lastActive: "7 mins ago", reports: [] },
+        { id: 51, name: "Suhail", phone: "9876543021", blood: "O+", lat: 11.2588, lng: 75.7804, address: "Kozhikode", activeScore: "Low", lastActive: "4 days ago", reports: [] },
+        { id: 52, name: "Rashid", phone: "9876543022", blood: "A+", lat: 11.8745, lng: 75.3704, address: "Kannur", activeScore: "High", lastActive: "6 mins ago", reports: [] },
+        { id: 53, name: "Basheer", phone: "9876543023", blood: "B+", lat: 10.7867, lng: 76.6548, address: "Palakkad", activeScore: "Medium", lastActive: "1 day ago", reports: [] },
+        { id: 54, name: "Ameen", phone: "9876543024", blood: "O-", lat: 9.5916, lng: 76.5222, address: "Kottayam", activeScore: "High", lastActive: "11 mins ago", reports: [] },
+        { id: 55, name: "Najeeb", phone: "9876543025", blood: "A+", lat: 9.8500, lng: 76.4500, address: "Cherthala", activeScore: "Low", lastActive: "3 days ago", reports: [] },
+        { id: 56, name: "Shamsudheen", phone: "9876543026", blood: "B+", lat: 9.1720, lng: 76.5000, address: "Karunagappally", activeScore: "High", lastActive: "5 mins ago", reports: [] },
+        { id: 57, name: "Usman", phone: "9876543027", blood: "O+", lat: 8.8932, lng: 76.6141, address: "Kollam", activeScore: "Medium", lastActive: "1 day ago", reports: [] },
+        { id: 58, name: "Faizal", phone: "9876543028", blood: "A+", lat: 8.5241, lng: 76.9366, address: "Thiruvananthapuram", activeScore: "High", lastActive: "8 mins ago", reports: [] },
+        { id: 59, name: "Nizar", phone: "9876543029", blood: "B+", lat: 9.2648, lng: 76.7870, address: "Pathanamthitta", activeScore: "Low", lastActive: "2 days ago", reports: [] },
+        { id: 60, name: "Shafi", phone: "9876543030", blood: "AB+", lat: 9.4981, lng: 76.3388, address: "Alappuzha", activeScore: "High", lastActive: "6 mins ago", reports: [] }
+    ];
+
+    // Initialize storage with 60 donors
+    function initStorage() {
+        // Clear old data and load fresh donors
+        localStorage.setItem("donors_data", JSON.stringify(ALL_DONORS));
+        donorsDB = [...ALL_DONORS];
+        console.log(`✅ Loaded ${donorsDB.length} donors into database`);
+        
+        if(!localStorage.getItem("app_users")) {
+            localStorage.setItem("app_users", JSON.stringify([]));
+        }
+        if(!localStorage.getItem("feedbacks")) {
+            localStorage.setItem("feedbacks", JSON.stringify([]));
+        }
+        
+        usersDB = JSON.parse(localStorage.getItem("app_users"));
+        feedbacks = JSON.parse(localStorage.getItem("feedbacks"));
+        
+        // Create default test user if none exists
+        if(usersDB.length === 0){
+            usersDB.push({ id: 99, name: "Test User", phone: "8956230147", password: "*****", location: "Kerala", blood: "O+" });
+            localStorage.setItem("app_users", JSON.stringify(usersDB));
+            console.log("✅ Created default test user: 8956230147 / *****");
+        }
+    }
+    
+    initStorage();
+    let currentUser = null;
+    
+    function saveAll(){ 
+        localStorage.setItem("donors_data", JSON.stringify(donorsDB)); 
+        localStorage.setItem("app_users", JSON.stringify(usersDB)); 
+        localStorage.setItem("feedbacks", JSON.stringify(feedbacks)); 
+    }
+
+    async function searchLocation(query) {
+        if(!query || query.trim() === "") {
+            alert("Please enter a location name");
+            return null;
+        }
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
+                headers: { 'Accept-Language': 'en' }
+            });
+            const data = await response.json();
+            if(data && data.length > 0 && data[0].lat && data[0].lon) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                if(isNaN(lat) || isNaN(lng)) return null;
+                return { lat: lat, lng: lng, name: data[0].display_name };
+            } else {
+                alert(`Location "${query}" not found. Try "Kollam" or "Trivandrum"`);
+                return null;
+            }
+        } catch(e) {
+            console.error("Geocoding error:", e);
+            alert("Network error. Please try again.");
+            return null;
+        }
+    }
+
+    function calculateAIScore(donor, distanceKm, urgency) {
+        let distanceScore = distanceKm <= 5 ? 30 : (distanceKm <= 10 ? 20 : (distanceKm <= 20 ? 10 : (distanceKm <= 50 ? 5 : 0)));
+        let activeScoreValue = donor.activeScore === "High" ? 15 : (donor.activeScore === "Medium" ? 8 : 3);
+        let reportCount = donor.reports?.length || 0;
+        let trustScoreValue = reportCount >= 2 ? 0 : (reportCount === 1 ? 5 : 15);
+        let urgencyBoost = urgency === "Emergency" ? 10 : 0;
+        let totalScore = distanceScore + activeScoreValue + trustScoreValue + urgencyBoost;
+        let displayScore = totalScore >= 35 ? "High" : (totalScore >= 20 ? "Medium" : "Low");
+        return { totalScore, displayScore };
+    }
+
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function initDonorMap() {
+        if(donorMap) donorMap.remove();
+        donorMap = L.map('donorMap').setView([9.5, 76.5], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(donorMap);
+        donorMap.on('click', function(e) {
+            document.getElementById("donorLat").value = e.latlng.lat;
+            document.getElementById("donorLng").value = e.latlng.lng;
+            document.getElementById("donorCoordDisplay").innerText = e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5);
+            document.getElementById("donorAddressDisplay").innerHTML = `📍 Selected`;
+            if(window.donorMarker) donorMap.removeLayer(window.donorMarker);
+            window.donorMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(donorMap);
+        });
+        document.getElementById('donorSearchLocationBtn').onclick = async () => {
+            const query = document.getElementById('donorLocationSearchInput').value.trim();
+            const result = await searchLocation(query);
+            if(result) {
+                donorMap.setView([result.lat, result.lng], 12);
+                document.getElementById("donorLat").value = result.lat;
+                document.getElementById("donorLng").value = result.lng;
+                document.getElementById("donorCoordDisplay").innerText = result.lat.toFixed(5) + ", " + result.lng.toFixed(5);
+                document.getElementById("donorAddressDisplay").innerHTML = `📍 ${query}`;
+                if(window.donorMarker) donorMap.removeLayer(window.donorMarker);
+                window.donorMarker = L.marker([result.lat, result.lng]).addTo(donorMap);
+            }
+        };
+    }
+    
+    function initRequestMap() {
+        if(requestMap) requestMap.remove();
+        requestMap = L.map('requestMap').setView([9.5, 76.5], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(requestMap);
+        requestMap.on('click', function(e) {
+            document.getElementById("reqLat").value = e.latlng.lat;
+            document.getElementById("reqLng").value = e.latlng.lng;
+            document.getElementById("requestCoordDisplay").innerText = e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5);
+            document.getElementById("requestAddressDisplay").innerHTML = `📍 Emergency location`;
+            if(window.requestMarker) requestMap.removeLayer(window.requestMarker);
+            window.requestMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(requestMap);
+        });
+        document.getElementById('searchLocationBtn').onclick = async () => {
+            const query = document.getElementById('locationSearchInput').value.trim();
+            const result = await searchLocation(query);
+            if(result) {
+                requestMap.setView([result.lat, result.lng], 12);
+                document.getElementById("reqLat").value = result.lat;
+                document.getElementById("reqLng").value = result.lng;
+                document.getElementById("requestCoordDisplay").innerText = result.lat.toFixed(5) + ", " + result.lng.toFixed(5);
+                document.getElementById("requestAddressDisplay").innerHTML = `📍 ${query}`;
+                if(window.requestMarker) requestMap.removeLayer(window.requestMarker);
+                window.requestMarker = L.marker([result.lat, result.lng]).addTo(requestMap);
+            }
+        };
+    }
+
+    function useCurrentLocationForDonor() {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                donorMap.setView([pos.coords.latitude, pos.coords.longitude], 13);
+                document.getElementById("donorLat").value = pos.coords.latitude;
+                document.getElementById("donorLng").value = pos.coords.longitude;
+                document.getElementById("donorCoordDisplay").innerText = pos.coords.latitude.toFixed(5) + ", " + pos.coords.longitude.toFixed(5);
+                if(window.donorMarker) donorMap.removeLayer(window.donorMarker);
+                window.donorMarker = L.marker([pos.coords.latitude, pos.coords.longitude]).addTo(donorMap);
+            }, () => alert("Unable to get location"));
+        } else alert("Geolocation not supported");
+    }
+    
+    function useCurrentLocationForRequest() {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                requestMap.setView([pos.coords.latitude, pos.coords.longitude], 13);
+                document.getElementById("reqLat").value = pos.coords.latitude;
+                document.getElementById("reqLng").value = pos.coords.longitude;
+                document.getElementById("requestCoordDisplay").innerText = pos.coords.latitude.toFixed(5) + ", " + pos.coords.longitude.toFixed(5);
+                if(window.requestMarker) requestMap.removeLayer(window.requestMarker);
+                window.requestMarker = L.marker([pos.coords.latitude, pos.coords.longitude]).addTo(requestMap);
+            }, () => alert("Unable to get location"));
+        } else alert("Geolocation not supported");
+    }
+
+    const pages = ['authPage','dashboardPage','profilePage','donorFormPage','requestFormPage','feedbackPage','helpPage'];
+    function showPage(pageId) {
+        pages.forEach(p => document.getElementById(p).classList.remove('active-page'));
+        document.getElementById(pageId).classList.add('active-page');
+        if(pageId !== 'authPage') document.getElementById('navbar').style.display = 'flex';
+        else document.getElementById('navbar').style.display = 'none';
+        if(pageId === 'dashboardPage' && currentUser) {
+            document.getElementById('dashboardUserName').innerText = currentUser.name;
+            document.getElementById('donorCountDisplay').innerText = donorsDB.length;
+        }
+        if(pageId === 'profilePage' && currentUser) updateProfileUI();
+        if(pageId === 'feedbackPage') renderFeedbacks();
+        if(pageId === 'donorFormPage') setTimeout(() => { if(!donorMap) initDonorMap(); else donorMap.invalidateSize(); }, 150);
+        if(pageId === 'requestFormPage') setTimeout(() => { if(!requestMap) initRequestMap(); else requestMap.invalidateSize(); }, 150);
+    }
+
+    function updateProfileUI() {
+        if(!currentUser) return;
+        document.getElementById('profileDisplayName').innerText = currentUser.name;
+        document.getElementById('profileDisplayBlood').innerText = currentUser.blood;
+        document.getElementById('profileDisplayLocation').innerText = currentUser.location;
+        document.getElementById('profileDisplayPhone').innerText = currentUser.phone;
+        let donorData = donorsDB.find(d => d.phone === currentUser.phone);
+        document.getElementById('reportsCount').innerText = donorData?.reports?.length || 0;
+        document.getElementById('availabilityScore').innerHTML = donorData?.activeScore || 'Medium';
+        document.getElementById('editName').value = currentUser.name;
+        document.getElementById('editBlood').value = currentUser.blood;
+        document.getElementById('editLocation').value = currentUser.location;
+        document.getElementById('editPhone').value = currentUser.phone;
+    }
+
+    document.getElementById('showLoginTab').onclick = () => { document.getElementById('loginFormContainer').style.display = 'block'; document.getElementById('signupFormContainer').style.display = 'none'; };
+    document.getElementById('showSignupTab').onclick = () => { document.getElementById('loginFormContainer').style.display = 'none'; document.getElementById('signupFormContainer').style.display = 'block'; };
+    
+    document.getElementById('loginFormMain').addEventListener('submit', (e) => {
+        e.preventDefault();
+        let phone = document.getElementById('loginPhone').value.trim();
+        let pwd = document.getElementById('loginPassword').value;
+        let user = usersDB.find(u => u.phone === phone && u.password === pwd);
+        if(user) { 
+            currentUser = user; 
+            showPage('dashboardPage'); 
+            document.getElementById('loginErrorMsg').innerText = '';
+        } else {
+            document.getElementById('loginErrorMsg').innerText = 'Invalid credentials. Use: 8956230147 / ****';
+        }
+    });
+    
+    document.getElementById('signupFormMain').addEventListener('submit', (e) => {
+        e.preventDefault();
+        let name = document.getElementById('signupName').value.trim();
+        let phone = document.getElementById('signupPhone').value.trim();
+        let blood = document.getElementById('signupBlood').value;
+        let location = document.getElementById('signupLocation').value.trim();
+        let pwd = document.getElementById('signupPassword').value;
+        if(!name || !phone || !blood || !location || !pwd) { 
+            document.getElementById('signupErrorMsg').innerText = 'All fields required'; 
+            return; 
+        }
+        if(usersDB.find(u=>u.phone===phone)) { 
+            document.getElementById('signupErrorMsg').innerText = 'Phone already registered'; 
+            return; 
+        }
+        usersDB.push({ id: Date.now(), name, phone, blood, location, password: pwd });
+        saveAll();
+        alert('Account created! Please login.');
+        document.getElementById('showLoginTab').click();
+    });
+    
+    document.querySelectorAll('.dash-card').forEach(card => {
+        card.addEventListener('click', () => {
+            let action = card.dataset.dash;
+            if(action === 'donorForm') showPage('donorFormPage');
+            if(action === 'requestForm') showPage('requestFormPage');
+            if(action === 'feedbackPage') { renderFeedbacks(); showPage('feedbackPage'); }
+            if(action === 'helpPage') showPage('helpPage');
+        });
+    });
+    
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            let nav = item.dataset.nav;
+            if(nav === 'dashboard') showPage('dashboardPage');
+            if(nav === 'profilePage') showPage('profilePage');
+            if(nav === 'searchNav') showPage('requestFormPage');
+        });
+    });
+    
+    document.getElementById('editProfileToggle')?.addEventListener('click', () => {
+        let view = document.getElementById('profileViewMode');
+        let edit = document.getElementById('profileEditMode');
+        if(view.style.display !== 'none') { view.style.display = 'none'; edit.style.display = 'block'; }
+        else { view.style.display = 'block'; edit.style.display = 'none'; }
+    });
+    document.getElementById('cancelEditBtn')?.addEventListener('click', () => document.getElementById('editProfileToggle').click());
+    document.getElementById('editProfileForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        currentUser.name = document.getElementById('editName').value;
+        currentUser.blood = document.getElementById('editBlood').value;
+        currentUser.location = document.getElementById('editLocation').value;
+        currentUser.phone = document.getElementById('editPhone').value;
+        let idx = usersDB.findIndex(u => u.id === currentUser.id);
+        if(idx !== -1) usersDB[idx] = currentUser;
+        saveAll();
+        alert("Profile updated!");
+        document.getElementById('editProfileToggle').click();
+        updateProfileUI();
+    });
+    
+    document.getElementById('donorCurrentLocation')?.addEventListener('click', useCurrentLocationForDonor);
+    document.getElementById('requestCurrentLocation')?.addEventListener('click', useCurrentLocationForRequest);
+    
+    document.getElementById('donorRegisterForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let lat = parseFloat(document.getElementById('donorLat').value);
+        let lng = parseFloat(document.getElementById('donorLng').value);
+        if(!lat || !lng) { alert("Please select a location on the map"); return; }
+        donorsDB.push({ id: Date.now(), name: document.getElementById('donorName').value, phone: document.getElementById('donorPhone').value, blood: document.getElementById('donorBloodGroup').value, lat, lng, activeScore: "High", lastActive: "just now", reports: [] });
+        saveAll();
+        alert("Donor registered!");
+        showPage('dashboardPage');
+    });
+    
+    document.getElementById('bloodRequestForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let reqBlood = document.getElementById('reqBloodGroup').value;
+        let urgency = document.getElementById('urgencyLevelReq').value;
+        let reqLat = parseFloat(document.getElementById('reqLat').value);
+        let reqLng = parseFloat(document.getElementById('reqLng').value);
+        if(!reqLat || !reqLng) { alert("Please select a location on the map"); return; }
+        let resultsDiv = document.getElementById('searchResultsArea');
+        resultsDiv.innerHTML = `<div class="loading"><div class="spinner"></div><span>🤖 AI scanning ${donorsDB.length} donors...</span></div>`;
+        
+        setTimeout(() => {
+            let compatible = donorsDB.filter(d => d.blood === reqBlood && (d.reports?.length || 0) < 2);
+            if(compatible.length === 0) { 
+                resultsDiv.innerHTML = `<div class="glass-card" style="text-align:center;">⚠️ No donors found for ${reqBlood}. Try a different blood group.</div>`; 
+                return; 
+            }
+            
+            let scored = compatible.map(d => {
+                let dist = haversineDistance(reqLat, reqLng, d.lat, d.lng);
+                let aiScore = calculateAIScore(d, dist, urgency);
+                return { ...d, distanceKm: dist.toFixed(1), displayScore: aiScore.displayScore, rawDist: dist, totalScore: aiScore.totalScore };
+            }).sort((a,b) => b.totalScore - a.totalScore);
+            
+            let html = `<h3><i class="fas fa-microchip"></i> AI Enhanced Matches (${urgency}) - Found ${scored.length} donors</h3><div class="donor-grid">`;
+            scored.slice(0, 15).forEach(d => {
+                let emergencyBadge = (urgency === "Emergency" && d.displayScore !== "Low") ? `<div class="emergency-badge"><i class="fas fa-bolt"></i> Emergency Ready</div>` : '';
+                let reportedBadge = (d.reports?.length > 0) ? `<span class="reported-badge"><i class="fas fa-exclamation-triangle"></i> Reported</span>` : '';
+                let availClass = d.displayScore === "High" ? "avail-high" : (d.displayScore === "Medium" ? "avail-medium" : "avail-low");
+                let availIcon = d.displayScore === "High" ? "🟢" : (d.displayScore === "Medium" ? "🟠" : "🔴");
+                html += `<div class="donor-card">
+                            ${emergencyBadge}
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                <strong><i class="fas fa-user-md"></i> ${d.name}</strong>
+                                <span style="background:#ffe5e5; padding:4px 12px; border-radius:40px; font-weight:600;">${d.blood}</span>${reportedBadge}
+                            </div>
+                            <div style="margin: 8px 0;"><i class="fas fa-map-marker-alt"></i> 📍 Distance: <strong>${d.distanceKm} km</strong></div>
+                            <div class="${availClass}" style="margin: 12px 0;"><i class="fas fa-chart-line"></i> ${availIcon} AI Score: ${d.displayScore}</div>
+                            <div class="button-group">
+                                <button class="contact-btn" data-contact="${d.phone}"><i class="fas fa-phone-alt"></i> Contact</button>
+                                <button class="report-btn" data-report-id="${d.id}"><i class="fas fa-flag"></i> Report</button>
+                            </div>
+                         </div>`;
+            });
+            html += `</div>`;
+            resultsDiv.innerHTML = html;
+            document.querySelectorAll('.contact-btn').forEach(btn => btn.addEventListener('click', () => alert(`📞 Call donor: ${btn.dataset.contact}`)));
+            document.querySelectorAll('.report-btn').forEach(btn => {
+                btn.addEventListener('click', () => { currentReportDonorId = parseInt(btn.dataset.reportId); document.getElementById('reportModal').style.display = 'flex'; });
+            });
+        }, 1000);
+    });
+    
+    document.getElementById('submitReportBtn')?.addEventListener('click', () => {
+        let donor = donorsDB.find(d => d.id === currentReportDonorId);
+        if(donor) {
+            if(!donor.reports) donor.reports = [];
+            donor.reports.push({ reason: document.getElementById('reportReason').value, timestamp: new Date() });
+            saveAll();
+            alert("✅ Donor reported. Their AI score will be reduced.");
+        }
+        document.getElementById('reportModal').style.display = 'none';
+        currentReportDonorId = null;
+    });
+    document.getElementById('cancelReportBtn')?.addEventListener('click', () => { document.getElementById('reportModal').style.display = 'none'; currentReportDonorId = null; });
+    
+    function renderFeedbacks() {
+        let list = document.getElementById('feedbackList');
+        if(list) {
+            if(feedbacks.length === 0) list.innerHTML = '<li>No feedback yet. Be the first!</li>';
+            else list.innerHTML = feedbacks.slice(-5).reverse().map(f => `<li><i class="fas fa-comment"></i> ${f}</li>`).join('');
+        }
+    }
+    document.getElementById('submitFeedbackBtn')?.addEventListener('click', () => {
+        let txt = document.getElementById('feedbackText').value.trim();
+        if(txt) { feedbacks.push(txt); saveAll(); renderFeedbacks(); document.getElementById('feedbackText').value = ''; alert("Thank you for your feedback!"); }
+        else alert("Please write something");
+    });
+    
+    document.getElementById('logoutGlobal').onclick = () => { currentUser = null; showPage('authPage'); };
+    document.getElementById('backDashboardFromDonor')?.addEventListener('click', () => showPage('dashboardPage'));
+    document.getElementById('backDashboardFromRequest')?.addEventListener('click', () => showPage('dashboardPage'));
+    document.getElementById('backDashboardFeedback')?.addEventListener('click', () => showPage('dashboardPage'));
+    document.getElementById('backDashboardHelp')?.addEventListener('click', () => showPage('dashboardPage'));
+    
+    // Start on login page
+    showPage('authPage');
+</script>
+</body>
+</html>
